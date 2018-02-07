@@ -96,6 +96,7 @@ public class CustomLineBreakTextView extends View {
         lineList.clear();
         float usedWidth = 0;
         Line line = null;
+
         for (String word : wordList) {
             float width = paint.measureText(word);
             usedWidth += width;
@@ -103,23 +104,23 @@ public class CustomLineBreakTextView extends View {
                 lineList.add(line);
                 line = new Line();
                 if (width > widthSize) {
-                    Word restWord = addWordListBySub(lineList, paint, word, widthSize);
+                    Word restWord = addWordListBySub(word, widthSize);
                     if (restWord != null) {
                         line = new Line();
-                        line.getWordList().add(restWord);
+                        line.wordList.add(restWord);
                         usedWidth = restWord.width;
                         usedWidth += wordHorizontalMargin;
                     }
                 } else {
                     usedWidth = width;
-                    line.getWordList().add(new Word(word, width, paint.getTextSize()));
+                    line.wordList.add(new Word(word, width, paint.getTextSize()));
                     usedWidth += wordHorizontalMargin;
                 }
             } else {
                 if (line == null) {
                     line = new Line();
                 }
-                line.getWordList().add(new Word(word, width, paint.getTextSize()));
+                line.wordList.add(new Word(word, width, paint.getTextSize()));
                 usedWidth += wordHorizontalMargin;
             }
             Log.d(TAG, "width:" + width + "--" + "totalWidth:" + usedWidth);
@@ -135,7 +136,7 @@ public class CustomLineBreakTextView extends View {
         int totalHeight = 0;
         int lineListSize = lineList.size();
         for (int i = 0; i < lineListSize; i++) {
-            totalHeight += lineList.get(i).getWordList().get(0).height;
+            totalHeight += lineList.get(i).wordList.get(0).height;
         }
         totalHeight += (lineListSize - 1) * wordVerticalMargin;
         totalHeight += getPaddingTop();
@@ -145,7 +146,7 @@ public class CustomLineBreakTextView extends View {
         setMeasuredDimension(totalWidth, totalHeight);
     }
 
-    private Word addWordListBySub(List<Line> lineList, TextPaint paint, String word, int widthSize) {
+    private Word addWordListBySub(String word, int widthSize) {
         Log.d(TAG, "addWordListBySub(" + word + ", " + widthSize + ")");
         if (!TextUtils.isEmpty(word)) {
             float width = paint.measureText(word);
@@ -159,10 +160,10 @@ public class CustomLineBreakTextView extends View {
                 int realIndex;
                 String realSubstring;
                 if (substringWidth < widthSize) {
-                    realIndex = getMinSubstringWidthIndex(paint, word, widthSize, index);
+                    realIndex = getMinSubstringWidthIndex(word, widthSize, index);
                     realSubstring = word.substring(0, realIndex);
                 } else if (substringWidth > widthSize) {
-                    realIndex = getMaxSubstringWidthIndex(paint, word, widthSize, index);
+                    realIndex = getMaxSubstringWidthIndex(word, widthSize, index);
                     realSubstring = word.substring(0, realIndex);
                 } else {
                     realIndex = index;
@@ -170,16 +171,16 @@ public class CustomLineBreakTextView extends View {
                 }
                 float realWidth = paint.measureText(realSubstring);
                 Line line = new Line();
-                line.getWordList().add(new Word(realSubstring, realWidth, paint.getTextSize()));
+                line.wordList.add(new Word(realSubstring, realWidth, paint.getTextSize()));
                 lineList.add(line);
-                String restSubstring = word.substring(realIndex + 1);
-                return addWordListBySub(lineList, paint, restSubstring, widthSize);
+                String restSubstring = word.substring(realIndex);
+                return addWordListBySub(restSubstring, widthSize);
             }
         }
         return null;
     }
 
-    private int getMinSubstringWidthIndex(TextPaint paint, String word, int widthSize, int index) {
+    private int getMinSubstringWidthIndex(String word, int widthSize, int index) {
         Log.d(TAG, "getMinSubstringWidthIndex(" + word + ", " + widthSize + ", " + index + ")");
         for (int i = index + 1, size = word.length(); i < size; i++) {
             String substring = word.substring(i);
@@ -193,7 +194,7 @@ public class CustomLineBreakTextView extends View {
         return index;
     }
 
-    private int getMaxSubstringWidthIndex(TextPaint paint, String word, int widthSize, int index) {
+    private int getMaxSubstringWidthIndex(String word, int widthSize, int index) {
         Log.d(TAG, "getMaxSubstringWidthIndex(" + word + ", " + widthSize + ", " + index + ")");
         for (int i = index - 1; i > 0; i--) {
             String substring = word.substring(i);
@@ -212,7 +213,7 @@ public class CustomLineBreakTextView extends View {
         Log.d(TAG, "onDraw()");
         float totalHeight = getPaddingTop() + textHeight;
         for (Line line : lineList) {
-            ArrayList<Word> wordList = line.getWordList();
+            ArrayList<Word> wordList = line.wordList;
 
             float marginWidth = 0;
             if (mGravity == CENTER) {
@@ -238,14 +239,6 @@ public class CustomLineBreakTextView extends View {
 
     private class Line {
         private ArrayList<Word> wordList = new ArrayList<>();
-
-        private ArrayList<Word> getWordList() {
-            return wordList;
-        }
-
-        private void setWordList(ArrayList<Word> wordList) {
-            this.wordList = wordList;
-        }
     }
 
     private class Word {
@@ -253,36 +246,9 @@ public class CustomLineBreakTextView extends View {
         private float width;
         private float height;
 
-        public Word() {
-        }
-
         private Word(String text, float width, float height) {
             this.text = text;
             this.width = width;
-            this.height = height;
-        }
-
-        public String getText() {
-            return text;
-        }
-
-        public void setText(String text) {
-            this.text = text;
-        }
-
-        public float getWidth() {
-            return width;
-        }
-
-        public void setWidth(float width) {
-            this.width = width;
-        }
-
-        public float getHeight() {
-            return height;
-        }
-
-        public void setHeight(float height) {
             this.height = height;
         }
     }
