@@ -1,6 +1,7 @@
 package io.weichao.customlinebreaktextview.widget;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -12,6 +13,8 @@ import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
+
+import io.weichao.customlinebreaktextview.R;
 
 /**
  * Created by chao.wei on 2018/2/6.
@@ -26,6 +29,7 @@ public class CustomLineBreakTextView extends View {
     private float mTextSize = 42;
     private float mWordHorizontalMargin = 100;
     private float mWordVerticalMargin = 30;
+    private int mTextColor = Color.DKGRAY;
 
     private TextPaint paint;
     private Paint.FontMetrics fontMetrics;
@@ -43,14 +47,25 @@ public class CustomLineBreakTextView extends View {
 
     public CustomLineBreakTextView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+
+        TypedArray attributes = getContext().obtainStyledAttributes(attrs, R.styleable.CustomLineBreakTextView);
+        if (attributes != null) {
+            mGravity = attributes.getInt(R.styleable.CustomLineBreakTextView_gravity, mGravity);
+            mIncludeFontPadding = attributes.getBoolean(R.styleable.CustomLineBreakTextView_includeFontPadding, mIncludeFontPadding);
+            mTextSize = attributes.getDimension(R.styleable.CustomLineBreakTextView_textSize, mTextSize);
+            mWordHorizontalMargin = attributes.getDimension(R.styleable.CustomLineBreakTextView_wordHorizontalMargin, mWordHorizontalMargin);
+            mWordVerticalMargin = attributes.getDimension(R.styleable.CustomLineBreakTextView_wordVerticalMargin, mWordVerticalMargin);
+            mTextColor = attributes.getColor(R.styleable.CustomLineBreakTextView_textColor, mTextColor);
+        }
+
         init();
     }
 
     private void init() {
         paint = new TextPaint();
         paint.setAntiAlias(true);
-        paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
+        paint.setColor(mTextColor);
         paint.setTextSize(mTextSize);
     }
 
@@ -87,7 +102,7 @@ public class CustomLineBreakTextView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        Log.d(TAG, "onMeasure()");
+        Log.d(TAG, "onMeasure(" + widthMeasureSpec + ", " + heightMeasureSpec + ")");
 
         if (wordList == null || wordList.size() == 0) {
             Log.d(TAG, "wordList == null || wordList.size() == 0");
@@ -96,9 +111,16 @@ public class CustomLineBreakTextView extends View {
         }
 
         int widthSize = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();// 去掉 padding，实际可用的宽度
+        if (heightMeasureSpec == 0) {// 避免在 scrollView 里获取不到高度
+            heightMeasureSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.AT_MOST);
+        }
         int heightSize = MeasureSpec.getSize(heightMeasureSpec) - getPaddingTop() - getPaddingBottom();// 去掉 padding，实际可用的高度
         Log.d(TAG, "widthSize:" + widthSize);
         Log.d(TAG, "heightSize:" + heightSize);
+        if (widthSize <= 0 || heightSize <= 0) {// 避免无位置放置
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
 
         lineList.clear();
         float usedWidth = 0;
