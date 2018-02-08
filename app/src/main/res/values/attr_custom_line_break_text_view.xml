@@ -2,13 +2,14 @@
 <resources>
     <declare-styleable name="CustomLineBreakTextView">
         <attr name="gravity" format="enum">
-            <enum name="center" value="0" />
-            <enum name="left" value="1" />
+            <enum name="left" value="0" />
+            <enum name="center" value="1" />
         </attr>
         <attr name="includeFontPadding" format="boolean" />
         <attr name="textSize" format="dimension" />
         <attr name="wordHorizontalMargin" format="dimension" />
         <attr name="wordVerticalMargin" format="dimension" />
         <attr name="textColor" format="color" />
+        <attr name="letterSpacing" format="float" />
     </declare-styleable>
 </resources>
