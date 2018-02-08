@@ -12,7 +12,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         CustomLineBreakTextView clbTv = findViewById(R.id.custom_line_break_textview);
-        clbTv.setText("fifififif " +
+        clbTv.setText("fififififififfififififfififififfififififfififififfififififfifif " +
                 "T-shirtT-shirtT-shirtT-shirt " +
                 "T-shirtT-shirtT-shirtT-shirtT-shirtT-shirtT-shirtT-shirtT-shirtT-shirtT-shirt " +
                 "T-shirt " +

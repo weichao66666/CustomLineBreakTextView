@@ -130,15 +130,12 @@ public class CustomLineBreakTextView extends View {
 
         Log.d(TAG, "------------------------------------ 开始计算位置 ------------------------------------");
         for (String word : wordList) {
-            float width;
-            if (mLetterSpacing > 0) {
-                width = getMeasuredWidthWithLetterSpacing(word);
-            } else {
-                width = paint.measureText(word);
-            }
+            float width = getMeasuredWidth(word);
             usedWidth += width;
             if (usedWidth > widthSize) {
-                lineList.add(line);
+                if (line != null) {
+                    lineList.add(line);
+                }
                 line = new Line();
                 if (width > widthSize) {
                     Word restWord = addWordListBySub(word, widthSize);
@@ -163,7 +160,7 @@ public class CustomLineBreakTextView extends View {
             Log.d(TAG, "width:" + width + "--" + "totalWidth:" + usedWidth);
         }
 
-        if (!lineList.contains(line)) {
+        if (line != null && !lineList.contains(line)) {
             lineList.add(line);// 把最后一行添加到集合中
         }
         Log.d(TAG, "------------------------------------ 结束计算位置 ------------------------------------");
@@ -182,6 +179,16 @@ public class CustomLineBreakTextView extends View {
         setMeasuredDimension(totalWidth, totalHeight);
     }
 
+    private float getMeasuredWidth(String str) {
+        float width;
+        if (mLetterSpacing > 0) {
+            width = getMeasuredWidthWithLetterSpacing(str);
+        } else {
+            width = paint.measureText(str);
+        }
+        return width;
+    }
+
     private float getMeasuredWidthWithLetterSpacing(String word) {
         int totalWidth = 0;
         char[] chars = word.toCharArray();
@@ -198,24 +205,14 @@ public class CustomLineBreakTextView extends View {
     private Word addWordListBySub(String word, int widthSize) {
         Log.d(TAG, "addWordListBySub(" + word + ", " + widthSize + ")");
         if (!TextUtils.isEmpty(word)) {
-            float width;
-            if (mLetterSpacing > 0) {
-                width = getMeasuredWidthWithLetterSpacing(word);
-            } else {
-                width = paint.measureText(word);
-            }
-            if (width < widthSize) {
+            float width = getMeasuredWidth(word);
+            if (width <= widthSize) {
                 return new Word(word, width, getTextHeight());
             } else {
                 float oneCharWidth = width / word.length();
                 int index = (int) (widthSize / oneCharWidth);
                 String substring = word.substring(0, index);
-                float substringWidth;
-                if (mLetterSpacing > 0) {
-                    substringWidth = getMeasuredWidthWithLetterSpacing(substring);
-                } else {
-                    substringWidth = paint.measureText(substring);
-                }
+                float substringWidth = getMeasuredWidth(substring);
                 int realIndex;
                 String realSubstring;
                 if (substringWidth < widthSize) {
@@ -228,12 +225,7 @@ public class CustomLineBreakTextView extends View {
                     realIndex = index;
                     realSubstring = substring;
                 }
-                float realWidth;
-                if (mLetterSpacing > 0) {
-                    realWidth = getMeasuredWidthWithLetterSpacing(realSubstring);
-                } else {
-                    realWidth = paint.measureText(realSubstring);
-                }
+                float realWidth = getMeasuredWidth(realSubstring);
                 Line line = new Line();
                 line.wordList.add(new Word(realSubstring, realWidth, getTextHeight()));
                 lineList.add(line);
@@ -248,12 +240,7 @@ public class CustomLineBreakTextView extends View {
         Log.d(TAG, "getMinSubstringWidthIndex(" + word + ", " + widthSize + ", " + index + ")");
         for (int i = index + 1, size = word.length(); i < size; i++) {
             String substring = word.substring(i);
-            float width;
-            if (mLetterSpacing > 0) {
-                width = getMeasuredWidthWithLetterSpacing(substring);
-            } else {
-                width = paint.measureText(substring);
-            }
+            float width = getMeasuredWidth(substring);
             if (width > widthSize) {
                 int minSubstringWidthIndex = i - 1;
                 Log.d(TAG, "getMinSubstringWidthIndex success: " + minSubstringWidthIndex + ", " + substring);
@@ -267,14 +254,9 @@ public class CustomLineBreakTextView extends View {
         Log.d(TAG, "getMaxSubstringWidthIndex(" + word + ", " + widthSize + ", " + index + ")");
         for (int i = index - 1; i > 0; i--) {
             String substring = word.substring(i);
-            float width;
-            if (mLetterSpacing > 0) {
-                width = getMeasuredWidthWithLetterSpacing(substring);
-            } else {
-                width = paint.measureText(substring);
-            }
+            float width = getMeasuredWidth(substring);
             if (width < widthSize) {
-                int maxSubstringWidthIndex = i + 1;
+                int maxSubstringWidthIndex = i;
                 Log.d(TAG, "getMaxSubstringWidthIndex success: " + maxSubstringWidthIndex + ", " + substring);
                 return maxSubstringWidthIndex;
             }
@@ -309,38 +291,38 @@ public class CustomLineBreakTextView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         Log.d(TAG, "onDraw()");
-        float totalHeight = getPaddingTop() - getViewTop();
+        float totalY = getPaddingTop() - getViewTop();
         for (Line line : lineList) {
             ArrayList<Word> wordList = line.wordList;
 
-            float marginWidth = 0;
+            float marginLeft = 0;
             if (mGravity == GRAVITY_CENTER) {
                 float totalUsedWidth = 0;
                 for (Word word : wordList) {
                     totalUsedWidth += word.width;
                 }
                 totalUsedWidth += (wordList.size() - 1) * mWordHorizontalMargin;
-                marginWidth = (getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - totalUsedWidth) / 2;
+                marginLeft = (getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - totalUsedWidth) / 2;
             }
 
-            float totalWidth = getPaddingLeft() + marginWidth;
+            float totalX = getPaddingLeft() + marginLeft;
             for (Word word : wordList) {
                 if (mLetterSpacing > 0) {
                     for (char c : word.text.toCharArray()) {
                         String cStr = String.valueOf(c);
-                        canvas.drawText(cStr, totalWidth, totalHeight, paint);// draw 从左下角开始
-                        totalWidth += paint.measureText(cStr);
-                        totalWidth += mLetterSpacing;
+                        canvas.drawText(cStr, totalX, totalY, paint);// draw 从左上角开始，需要计算出需要的宽高
+                        totalX += paint.measureText(cStr);
+                        totalX += mLetterSpacing;
                     }
                 } else {
-                    canvas.drawText(word.text, totalWidth, totalHeight, paint);// draw 从左下角开始
-                    totalWidth += word.width;
+                    canvas.drawText(word.text, totalX, totalY, paint);// draw 从左上角开始，需要计算出需要的宽高
+                    totalX += word.width;
                 }
-                totalWidth += mWordHorizontalMargin;
+                totalX += mWordHorizontalMargin;
             }
 
-            totalHeight += wordList.get(0).height;
-            totalHeight += mWordVerticalMargin;
+            totalY += wordList.get(0).height;
+            totalY += mWordVerticalMargin;
         }
     }
 
