@@ -12,7 +12,6 @@ import android.util.Log;
 import android.view.View;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by chao.wei on 2018/2/6.
@@ -22,16 +21,17 @@ public class CustomLineBreakTextView extends View {
 
     public static final int CENTER = 0;
 
-    private TextPaint paint;
-
     private int mGravity = CENTER;
+    private boolean mIncludeFontPadding = false;
+    private float mTextSize = 42;
+    private float mWordHorizontalMargin = 100;
+    private float mWordVerticalMargin = 30;
 
+    private TextPaint paint;
+    private Paint.FontMetrics fontMetrics;
     private ArrayList<String> wordList = new ArrayList<>();
     private ArrayList<Line> lineList = new ArrayList<>();
 
-    private int wordHorizontalMargin = 100;
-    private int wordVerticalMargin = 30;
-    private float textHeight = 42;
 
     public CustomLineBreakTextView(Context context) {
         this(context, null);
@@ -51,12 +51,12 @@ public class CustomLineBreakTextView extends View {
         paint.setAntiAlias(true);
         paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
-        paint.setTextSize(textHeight);
+        paint.setTextSize(mTextSize);
     }
 
     public void setText(CharSequence charSequence) {
+        wordList.clear();
         if (!TextUtils.isEmpty(charSequence)) {
-            wordList.clear();
             StringBuilder stringBuilder = null;
             int length = charSequence.length();
             for (int i = 0; i < length; i++) {
@@ -88,6 +88,13 @@ public class CustomLineBreakTextView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         Log.d(TAG, "onMeasure()");
+
+        if (wordList == null || wordList.size() == 0) {
+            Log.d(TAG, "wordList == null || wordList.size() == 0");
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            return;
+        }
+
         int widthSize = MeasureSpec.getSize(widthMeasureSpec) - getPaddingLeft() - getPaddingRight();// 去掉 padding，实际可用的宽度
         int heightSize = MeasureSpec.getSize(heightMeasureSpec) - getPaddingTop() - getPaddingBottom();// 去掉 padding，实际可用的高度
         Log.d(TAG, "widthSize:" + widthSize);
@@ -109,19 +116,19 @@ public class CustomLineBreakTextView extends View {
                         line = new Line();
                         line.wordList.add(restWord);
                         usedWidth = restWord.width;
-                        usedWidth += wordHorizontalMargin;
+                        usedWidth += mWordHorizontalMargin;
                     }
                 } else {
                     usedWidth = width;
-                    line.wordList.add(new Word(word, width, paint.getTextSize()));
-                    usedWidth += wordHorizontalMargin;
+                    line.wordList.add(new Word(word, width, getTextHeight()));
+                    usedWidth += mWordHorizontalMargin;
                 }
             } else {
                 if (line == null) {
                     line = new Line();
                 }
-                line.wordList.add(new Word(word, width, paint.getTextSize()));
-                usedWidth += wordHorizontalMargin;
+                line.wordList.add(new Word(word, width, getTextHeight()));
+                usedWidth += mWordHorizontalMargin;
             }
             Log.d(TAG, "width:" + width + "--" + "totalWidth:" + usedWidth);
         }
@@ -135,10 +142,8 @@ public class CustomLineBreakTextView extends View {
 
         int totalHeight = 0;
         int lineListSize = lineList.size();
-        for (int i = 0; i < lineListSize; i++) {
-            totalHeight += lineList.get(i).wordList.get(0).height;
-        }
-        totalHeight += (lineListSize - 1) * wordVerticalMargin;
+        totalHeight += lineListSize * getTextHeight();
+        totalHeight += (lineListSize - 1) * mWordVerticalMargin;
         totalHeight += getPaddingTop();
         totalHeight += getPaddingBottom();
         Log.d(TAG, "totalHeight: " + totalHeight);
@@ -151,7 +156,7 @@ public class CustomLineBreakTextView extends View {
         if (!TextUtils.isEmpty(word)) {
             float width = paint.measureText(word);
             if (width < widthSize) {
-                return new Word(word, width, paint.getTextSize());
+                return new Word(word, width, getTextHeight());
             } else {
                 float oneCharWidth = width / word.length();
                 int index = (int) (widthSize / oneCharWidth);
@@ -171,7 +176,7 @@ public class CustomLineBreakTextView extends View {
                 }
                 float realWidth = paint.measureText(realSubstring);
                 Line line = new Line();
-                line.wordList.add(new Word(realSubstring, realWidth, paint.getTextSize()));
+                line.wordList.add(new Word(realSubstring, realWidth, getTextHeight()));
                 lineList.add(line);
                 String restSubstring = word.substring(realIndex);
                 return addWordListBySub(restSubstring, widthSize);
@@ -208,10 +213,34 @@ public class CustomLineBreakTextView extends View {
         return index;
     }
 
+    private float getTextHeight() {
+        float textHeight;
+        if (fontMetrics == null) {
+            fontMetrics = paint.getFontMetrics();
+            Log.d(TAG, "fontMetrics: " + fontMetrics.top + ", " + fontMetrics.ascent + ", " + fontMetrics.leading + ", " + fontMetrics.descent + ", " + fontMetrics.bottom);
+        }
+        if (mIncludeFontPadding) {
+            textHeight = fontMetrics.bottom - fontMetrics.top;
+        } else {
+            textHeight = fontMetrics.descent - fontMetrics.ascent;
+        }
+        return textHeight;
+    }
+
+    private float getViewTop() {
+        float top;
+        if (mIncludeFontPadding) {
+            top = fontMetrics.top;
+        } else {
+            top = fontMetrics.ascent;
+        }
+        return top;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         Log.d(TAG, "onDraw()");
-        float totalHeight = getPaddingTop() + textHeight;
+        float totalHeight = getPaddingTop() - getViewTop();
         for (Line line : lineList) {
             ArrayList<Word> wordList = line.wordList;
 
@@ -221,7 +250,7 @@ public class CustomLineBreakTextView extends View {
                 for (Word word : wordList) {
                     totalUsedWidth += word.width;
                 }
-                totalUsedWidth += (wordList.size() - 1) * wordHorizontalMargin;
+                totalUsedWidth += (wordList.size() - 1) * mWordHorizontalMargin;
                 marginWidth = (getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - totalUsedWidth) / 2;
             }
 
@@ -229,11 +258,11 @@ public class CustomLineBreakTextView extends View {
             for (Word word : wordList) {
                 canvas.drawText(word.text, totalWidth, totalHeight, paint);// draw 从左下角开始
                 totalWidth += word.width;
-                totalWidth += wordHorizontalMargin;
+                totalWidth += mWordHorizontalMargin;
             }
 
             totalHeight += wordList.get(0).height;
-            totalHeight += wordVerticalMargin;
+            totalHeight += mWordVerticalMargin;
         }
     }
 
