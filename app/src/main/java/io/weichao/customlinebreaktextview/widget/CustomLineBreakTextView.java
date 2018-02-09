@@ -79,9 +79,10 @@ public class CustomLineBreakTextView extends View {
             for (int i = 0, length = charSequence.length(); i < length; i++) {
                 char c = charSequence.charAt(i);
 //                Log.d(TAG, "charSequence.charAt(" + i + "): " + c);
-                if (c != '-' && (c < 'A' || (c > 'Z' && c < 'a') || c > 'z')) {
+                if (c != '\'' && c != '-' && (c < 'A' || (c > 'Z' && c < 'a') || c > 'z')) {
                     if (stringBuilder != null) {
-                        wordList.add(stringBuilder.toString());
+                        stringBuilder.append(c);
+                        wordList.add(stringBuilder.toString().trim());
                         stringBuilder = null;
                     }
                 } else {
